@@ -26,6 +26,91 @@
   · <a href="https://cappyeo.github.io/discord-mcp/"><strong>Documentation</strong></a>
 </p>
 
+## BuyingAIO fork: local setup
+
+This fork runs locally over stdio; Railway is not required. Use the built checkout
+below, not the upstream npm package, so that the fixes in this fork are included.
+The upstream documentation and npm quick start remain below for reference.
+
+### Build the checkout
+
+Use Node.js 22.12 or later and the package manager pinned in `package.json`.
+
+```bash
+pnpm install --frozen-lockfile
+pnpm --filter @discord-mcp/cli... build
+node packages/mcp-server/dist/cli.js catalog --check --json
+```
+
+The catalog command needs no Discord credential and cannot modify Discord.
+
+### Connect a caller-owned bot in read-only mode
+
+Create a dedicated Discord bot, invite it only to the intended server, and grant
+only the permissions needed for the workflows you approve. Do not grant
+Administrator as a shortcut. Onboarding changes require Manage Server and Manage
+Roles; channel, role, and audit-log operations have their own Discord permissions.
+
+Keep its token in a private file outside this checkout, never in Git, chat, or an
+MCP configuration. For example, create
+`~/.config/buyingaio-discord-mcp/discord.env` with directory mode `700` and file mode
+`600`, and edit it locally:
+
+```dotenv
+DISCORD_TOKEN="Bot YOUR_DISCORD_BOT_TOKEN"
+```
+
+From the repository root, select a supported Node executable and replace
+`YOUR_GUILD_ID` with the intended server ID:
+
+```bash
+NODE="$(command -v node)"
+REPO="$(pwd)"
+ENV_FILE="$HOME/.config/buyingaio-discord-mcp/discord.env"
+
+"$NODE" --env-file="$ENV_FILE" packages/mcp-server/dist/cli.js setup \
+  --profile buyingaio --client generic \
+  --allowed-guilds YOUR_GUILD_ID \
+  --categories users,guild,channels,roles,members,onboarding,audit_log \
+  --tool-surface progressive --write-mode preview
+
+"$NODE" --env-file="$ENV_FILE" packages/mcp-server/dist/cli.js \
+  doctor --profile buyingaio --online
+"$NODE" --env-file="$ENV_FILE" packages/mcp-server/dist/cli.js \
+  smoke --profile buyingaio
+```
+
+Setup verifies the bot and guild before saving a non-secret, bot-locked profile.
+`preview` blocks all Discord mutations, not just destructive operations. The
+commands above do not request the smoke command's optional write lifecycle.
+
+**Do not use the `npx @discord-mcp/cli` fragment printed by profile setup for this
+fork.** It points to the upstream release. Register the local build with Copilot
+CLI instead:
+
+```bash
+copilot mcp add buyingaio-discord -- \
+  "$NODE" "--env-file=$ENV_FILE" \
+  "$REPO/packages/mcp-server/dist/cli.js" serve --profile buyingaio
+```
+
+Only register the connection after the profile and credential file are ready.
+This stores file paths, not the token. Keep the checkout at that location and
+rebuild it after pulling updates. No macOS Automation or Accessibility permission
+is needed.
+
+Keep the profile in preview mode until you explicitly approve particular server
+changes. A tool's `__confirm` argument is not independent human approval.
+Onboarding tools can manage server defaults and prompts, but cannot override a
+member's personal **Show All Channels** preference.
+
+### When remote hosting is useful
+
+Railway or another host is optional for shared clients or an always-on remote
+endpoint. That requires authenticated Streamable HTTP, HTTPS, a separate MCP
+access secret, and the same narrow bot/guild permissions. Do not expose stdio or
+an unauthenticated HTTP port to the internet.
+
 ## Live demo
 
 <p align="center">

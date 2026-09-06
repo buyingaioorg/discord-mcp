@@ -179,6 +179,19 @@ describe('guild allowlist policy', () => {
     ).rejects.toBeInstanceOf(GuildNotAllowedError);
   });
 
+  it.each([
+    '..',
+    '%2e%2e',
+    '../channels/123456789012345678',
+  ])('rejects malformed invite scope before fetching: %j', async (code) => {
+    const get = vi.fn();
+    const policy = new GuildScopePolicy(new Set([ALLOWED]), fakeRest(get));
+    await expect(
+      policy.authorizeTool('invites_delete', { code }, { inputSchema: { code: z.string() } }),
+    ).rejects.toBeInstanceOf(z.ZodError);
+    expect(get).not.toHaveBeenCalled();
+  });
+
   it('hides and blocks every unprovable global write and interaction route', async () => {
     expect(GUILD_SCOPE_BLOCKED_TOOLS.size).toBe(33);
     const policy = new GuildScopePolicy(new Set([ALLOWED]), fakeRest(vi.fn()));

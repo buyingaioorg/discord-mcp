@@ -16,9 +16,9 @@
  *     coverage runs everywhere, including local dev without a manual
  *     `pnpm build` step.
  *
- * We use `pnpm --filter @discord-mcp/cli build` for the cli build because
- * it transitively rebuilds mcp-core via turbo's `dependsOn: ['^build']`.
- * That single command therefore satisfies BOTH artefacts above.
+ * The trailing `...` in pnpm's filter includes the CLI's workspace dependencies
+ * and builds them first. That single command satisfies BOTH artefacts above
+ * without relying on a separate turbo invocation.
  *
  * Performance: skipped entirely when both artefacts already exist (the
  * common path during dev). On CI `pnpm build` runs as a separate step
@@ -47,7 +47,7 @@ export default async function setup(): Promise<void> {
   );
   // workspace root = ../../ relative to packages/mcp-server.
   const workspaceRoot = resolve(here, '../..');
-  execSync('pnpm --filter @discord-mcp/cli build', {
+  execSync('pnpm --filter @discord-mcp/cli... build', {
     stdio: 'inherit',
     cwd: workspaceRoot,
   });

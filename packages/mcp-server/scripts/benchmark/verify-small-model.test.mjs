@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -25,7 +25,9 @@ function sha256(bytes) {
 }
 
 async function makeArtifact() {
-  const directory = await mkdtemp(join(tmpdir(), 'discord-mcp-small-model-verify-'));
+  const directory = await realpath(
+    await mkdtemp(join(tmpdir(), 'discord-mcp-small-model-verify-')),
+  );
   const cliRelative = 'packages/mcp-server/dist/cli.js';
   const coreRelative = 'packages/mcp-core/dist/index.js';
   const cliPath = join(directory, cliRelative);

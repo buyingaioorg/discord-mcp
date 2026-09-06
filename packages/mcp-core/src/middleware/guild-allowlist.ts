@@ -7,6 +7,7 @@ import {
   GuildScopeUnresolvedError,
 } from '../errors/client.js';
 import { resolveChannelGuildId } from '../rest/channel-guild-cache.js';
+import { InviteCode } from '../tools/_lib/snowflake.js';
 import type { ToolMiddleware } from './compose.js';
 
 interface SchemaCarrier {
@@ -369,8 +370,9 @@ export class GuildScopePolicy {
   }
 
   private resolveInviteGuild(code: string): Promise<string> {
-    return this.cached(this.inviteGuilds, code, async () => {
-      const invite = (await this.rest.get(Routes.invite(code))) as GuildInvite;
+    const inviteCode = InviteCode.parse(code);
+    return this.cached(this.inviteGuilds, inviteCode, async () => {
+      const invite = (await this.rest.get(Routes.invite(inviteCode))) as GuildInvite;
       if (invite.guild?.id === undefined) {
         throw new GuildScopeUnresolvedError(`invite ${code}`);
       }
